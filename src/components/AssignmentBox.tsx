@@ -1,6 +1,7 @@
 import { useDroppable } from '@dnd-kit/core'
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { SortableShipCard } from './SortableShipCard'
+import { summarizeFleetComposition } from '../lib/fleetTypeSummary'
 import { FLEET_CAPACITY, FLEET_TYPE_LABELS, type Box, type ShipInstance, type ShipMasterEntry, type Tag } from '../types/models'
 
 export function AssignmentBox({
@@ -26,6 +27,7 @@ export function AssignmentBox({
   const masterById = new Map(shipMaster.map((m) => [m.id, m]))
   const capacity = FLEET_CAPACITY[box.fleetType]
   const isFull = box.shipInstanceIds.length >= capacity
+  const composition = summarizeFleetComposition(ships, shipMaster)
 
   return (
     <div
@@ -43,6 +45,7 @@ export function AssignmentBox({
           <div className="text-gray-500">
             {FLEET_TYPE_LABELS[box.fleetType]} / 札: {tag?.name ?? '(不明)'}
           </div>
+          {composition && <div className="text-gray-500">{composition}</div>}
         </div>
         <span
           className={`text-xs px-1.5 py-0.5 rounded ${
