@@ -21,6 +21,18 @@ export function addShipInstance(data: AppData, input: NewShipInstanceInput): App
   return { ...data, shipInstances: [...data.shipInstances, newInstance] }
 }
 
+export function addShipInstancesBulk(data: AppData, inputs: NewShipInstanceInput[]): AppData {
+  const newInstances: ShipInstance[] = inputs.map((input) => ({
+    id: generateId(),
+    masterId: input.masterId,
+    level: input.level,
+    refitFormId: input.refitFormId,
+    currentTagId: null,
+    memo: input.memo || undefined,
+  }))
+  return { ...data, shipInstances: [...data.shipInstances, ...newInstances] }
+}
+
 export function updateShipInstance(
   data: AppData,
   id: string,

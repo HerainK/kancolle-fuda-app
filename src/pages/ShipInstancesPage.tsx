@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { CsvImportPanel } from '../components/CsvImportPanel'
 import { MasterShipCard } from '../components/MasterShipCard'
 import { groupAllShipMaster } from '../lib/grouping'
 import { compareShipTypeGroups, getShipTypeGroupLabel } from '../lib/shipTypeGroups'
@@ -8,6 +9,7 @@ export function ShipInstancesPage() {
   const { data } = useAppData()
   const [search, setSearch] = useState('')
   const [typeFilter, setTypeFilter] = useState('')
+  const [showCsvImport, setShowCsvImport] = useState(false)
 
   const shipTypeOptions = useMemo(() => {
     const labels = new Set(data.shipMaster.flatMap((m) => m.refitForms.map((f) => getShipTypeGroupLabel(f.shipType))))
@@ -31,10 +33,21 @@ export function ShipInstancesPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <h1 className="text-xl font-bold">保有艦娘登録</h1>
+      <div className="flex items-center justify-between gap-2">
+        <h1 className="text-xl font-bold">保有艦娘登録</h1>
+        <button
+          type="button"
+          onClick={() => setShowCsvImport((v) => !v)}
+          className="px-3 py-1.5 rounded border border-gray-300 dark:border-gray-700 text-sm"
+        >
+          {showCsvImport ? '閉じる' : 'CSVインポート(Poi)'}
+        </button>
+      </div>
       <p className="text-sm text-gray-500">
         艦娘をクリックすると、その場でレベル・改装形態を入力して登録できます。既に保有している艦娘は「×N」で保有数を表示します。
       </p>
+
+      {showCsvImport && <CsvImportPanel onDone={() => setShowCsvImport(false)} />}
 
       <div className="flex flex-wrap gap-2">
         <input
