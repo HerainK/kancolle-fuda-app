@@ -1,3 +1,4 @@
+import { arrayMove } from '@dnd-kit/sortable'
 import type { AppData } from '../lib/appData'
 import { generateId } from '../lib/id'
 import type { Box, FleetType, KanColleEvent, Tag } from '../types/models'
@@ -102,6 +103,26 @@ export function updateBox(
 
 export function removeBox(data: AppData, eventId: string, boxId: string): AppData {
   return mapEvent(data, eventId, (e) => ({ ...e, boxes: e.boxes.filter((b) => b.id !== boxId) }))
+}
+
+/** 同一艦隊内で艦娘の並び順を入れ替える */
+export function reorderBoxShips(
+  data: AppData,
+  eventId: string,
+  boxId: string,
+  activeShipId: string,
+  overShipId: string,
+): AppData {
+  return mapEvent(data, eventId, (e) => ({
+    ...e,
+    boxes: e.boxes.map((b) => {
+      if (b.id !== boxId) return b
+      const oldIndex = b.shipInstanceIds.indexOf(activeShipId)
+      const newIndex = b.shipInstanceIds.indexOf(overShipId)
+      if (oldIndex === -1 || newIndex === -1 || oldIndex === newIndex) return b
+      return { ...b, shipInstanceIds: arrayMove(b.shipInstanceIds, oldIndex, newIndex) }
+    }),
+  }))
 }
 
 /**

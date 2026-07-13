@@ -20,6 +20,8 @@ export function ShipPool({
   const { setNodeRef, isOver } = useDroppable({ id: 'pool' })
   const [search, setSearch] = useState('')
   const [typeFilter, setTypeFilter] = useState('')
+  const [tagFilter, setTagFilter] = useState('')
+  const [sortByTag, setSortByTag] = useState(false)
 
   const masterById = useMemo(() => new Map(shipMaster.map((m) => [m.id, m])), [shipMaster])
 
@@ -31,8 +33,13 @@ export function ShipPool({
     [shipMaster],
   )
 
+  const tagOptions = useMemo(
+    () => Array.from(tagNameById.entries()).sort((a, b) => a[1].localeCompare(b[1], 'ja')),
+    [tagNameById],
+  )
+
   const filtered = useMemo(() => {
-    return ships.filter((s) => {
+    const result = ships.filter((s) => {
       const master = masterById.get(s.masterId)
       if (!master) return false
       if (typeFilter) {
@@ -40,10 +47,23 @@ export function ShipPool({
         const label = getShipTypeGroupLabel(form?.shipType ?? master.shipType)
         if (label !== typeFilter) return false
       }
+      if (tagFilter === 'untagged') {
+        if (s.currentTagId !== null) return false
+      } else if (tagFilter) {
+        if (s.currentTagId !== tagFilter) return false
+      }
       if (search && !master.name.includes(search)) return false
       return true
     })
-  }, [ships, masterById, search, typeFilter])
+    if (!sortByTag) return result
+    return [...result].sort((a, b) => {
+      const tagA = a.currentTagId ? (tagNameById.get(a.currentTagId) ?? '') : ''
+      const tagB = b.currentTagId ? (tagNameById.get(b.currentTagId) ?? '') : ''
+      if (!tagA && tagB) return -1
+      if (tagA && !tagB) return 1
+      return tagA.localeCompare(tagB, 'ja')
+    })
+  }, [ships, masterById, search, typeFilter, tagFilter, sortByTag, tagNameById])
 
   const untaggedCount = ships.filter((s) => s.currentTagId === null).length
 
@@ -71,7 +91,24 @@ export function ShipPool({
             </option>
           ))}
         </select>
+        <select
+          className="border border-gray-300 dark:border-gray-700 rounded px-1 py-1 bg-transparent text-xs"
+          value={tagFilter}
+          onChange={(e) => setTagFilter(e.target.value)}
+        >
+          <option value="">全ての札</option>
+          <option value="untagged">未タグ</option>
+          {tagOptions.map(([id, name]) => (
+            <option key={id} value={id}>
+              {name}
+            </option>
+          ))}
+        </select>
       </div>
+      <label className="flex items-center gap-1 text-xs text-gray-500">
+        <input type="checkbox" checked={sortByTag} onChange={(e) => setSortByTag(e.target.checked)} />
+        付与されている札で並び替え
+      </label>
       <div
         ref={setNodeRef}
         className={`flex flex-col gap-1.5 p-2 rounded-md border min-h-40 max-h-[70vh] overflow-y-auto ${

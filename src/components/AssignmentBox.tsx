@@ -1,5 +1,6 @@
 import { useDroppable } from '@dnd-kit/core'
-import { ShipCard } from './ShipCard'
+import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
+import { SortableShipCard } from './SortableShipCard'
 import { FLEET_CAPACITY, FLEET_TYPE_LABELS, type Box, type ShipInstance, type ShipMasterEntry, type Tag } from '../types/models'
 
 export function AssignmentBox({
@@ -52,36 +53,41 @@ export function AssignmentBox({
         </span>
       </div>
 
-      <div className="flex flex-col gap-1">
-        {ships.map((instance) => {
-          const master = masterById.get(instance.masterId)
-          if (!master) return null
-          return (
-            <div key={instance.id} className="flex items-center gap-1">
-              <div className="flex-1 min-w-0">
-                <ShipCard
-                  draggableId={`box-${box.id}-${instance.id}`}
-                  instance={instance}
-                  master={master}
-                  sourceBoxId={box.id}
-                  selected={selectedShipId === instance.id}
-                  onClick={() => onSelectShip(instance.id)}
-                />
+      <SortableContext
+        items={ships.map((instance) => `box-${box.id}-${instance.id}`)}
+        strategy={verticalListSortingStrategy}
+      >
+        <div className="flex flex-col gap-1">
+          {ships.map((instance) => {
+            const master = masterById.get(instance.masterId)
+            if (!master) return null
+            return (
+              <div key={instance.id} className="flex items-center gap-1">
+                <div className="flex-1 min-w-0">
+                  <SortableShipCard
+                    draggableId={`box-${box.id}-${instance.id}`}
+                    instance={instance}
+                    master={master}
+                    boxId={box.id}
+                    selected={selectedShipId === instance.id}
+                    onClick={() => onSelectShip(instance.id)}
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onRemoveShip(instance.id)
+                  }}
+                  className="text-xs px-1.5 py-1 rounded border border-gray-300 dark:border-gray-700 shrink-0"
+                >
+                  外す
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  onRemoveShip(instance.id)
-                }}
-                className="text-xs px-1.5 py-1 rounded border border-gray-300 dark:border-gray-700 shrink-0"
-              >
-                外す
-              </button>
-            </div>
-          )
-        })}
-      </div>
+            )
+          })}
+        </div>
+      </SortableContext>
     </div>
   )
 }

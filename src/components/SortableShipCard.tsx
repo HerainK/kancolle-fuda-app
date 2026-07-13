@@ -1,12 +1,13 @@
-import { useDraggable } from '@dnd-kit/core'
+import { useSortable } from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 import { ShipCardView } from './ShipCardView'
 import type { ShipInstance, ShipMasterEntry } from '../types/models'
 
-export function ShipCard({
+export function SortableShipCard({
   draggableId,
   instance,
   master,
-  sourceBoxId,
+  boxId,
   selected,
   onClick,
   tagName,
@@ -14,20 +15,20 @@ export function ShipCard({
   draggableId: string
   instance: ShipInstance
   master: ShipMasterEntry
-  sourceBoxId: string | null
+  boxId: string
   selected: boolean
   onClick: () => void
   tagName?: string | null
 }) {
-  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: draggableId,
-    data: { shipInstanceId: instance.id, sourceBoxId },
+    data: { shipInstanceId: instance.id, sourceBoxId: boxId },
   })
 
   return (
     <ShipCardView
       refCallback={setNodeRef}
-      style={transform ? { transform: `translate(${transform.x}px, ${transform.y}px)`, zIndex: 50 } : undefined}
+      style={{ transform: CSS.Transform.toString(transform), transition, zIndex: isDragging ? 50 : undefined }}
       listeners={listeners}
       attributes={attributes}
       isDragging={isDragging}

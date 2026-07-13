@@ -1,10 +1,11 @@
-import { DndContext, PointerSensor, TouchSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core'
+import { closestCenter, DndContext, PointerSensor, TouchSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core'
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { AssignmentBox } from '../components/AssignmentBox'
 import { ShipPool } from '../components/ShipPool'
 import { useAppData } from '../state/AppDataContext'
 import { assignShipToBox, canDropShip, removeShipFromBox } from '../state/assignmentActions'
+import { reorderBoxShips } from '../state/eventActions'
 
 export function AssignmentPage() {
   const { data, setData } = useAppData()
@@ -55,6 +56,7 @@ export function AssignmentPage() {
     const { active, over } = dragEvent
     if (!over) return
     const activeData = active.data.current as { shipInstanceId: string; sourceBoxId: string | null }
+    const overData = over.data.current as { shipInstanceId: string; sourceBoxId: string | null } | undefined
     const destId = String(over.id)
 
     if (destId === 'pool') {
@@ -63,11 +65,31 @@ export function AssignmentPage() {
       }
       return
     }
+
+    if (overData) {
+      // 別の艦娘カードの上にドロップされた場合
+      if (overData.sourceBoxId && overData.sourceBoxId === activeData.sourceBoxId) {
+        // 同一艦隊内: 並び替え
+        if (activeData.shipInstanceId !== overData.shipInstanceId) {
+          setData((prev) =>
+            reorderBoxShips(prev, event.id, overData.sourceBoxId!, activeData.shipInstanceId, overData.shipInstanceId),
+          )
+        }
+        return
+      }
+      if (overData.sourceBoxId) {
+        tryAssign(overData.sourceBoxId, activeData.shipInstanceId)
+      } else if (activeData.sourceBoxId) {
+        handleRemove(activeData.sourceBoxId, activeData.shipInstanceId)
+      }
+      return
+    }
+
     tryAssign(destId, activeData.shipInstanceId)
   }
 
   return (
-    <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
       <div className="flex flex-col gap-3">
         <div className="flex items-center justify-between gap-2">
           <h1 className="text-xl font-bold">割り当て</h1>
