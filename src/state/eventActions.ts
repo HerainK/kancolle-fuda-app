@@ -125,6 +125,16 @@ export function reorderBoxShips(
   }))
 }
 
+/** 艦隊(箱)自体の並び順を入れ替える */
+export function reorderBoxes(data: AppData, eventId: string, activeBoxId: string, overBoxId: string): AppData {
+  return mapEvent(data, eventId, (e) => {
+    const oldIndex = e.boxes.findIndex((b) => b.id === activeBoxId)
+    const newIndex = e.boxes.findIndex((b) => b.id === overBoxId)
+    if (oldIndex === -1 || newIndex === -1 || oldIndex === newIndex) return e
+    return { ...e, boxes: arrayMove(e.boxes, oldIndex, newIndex) }
+  })
+}
+
 /**
  * イベントの札をすべて削除する。艦隊は札への参照が必須のため、
  * 一緒にすべて削除する(=艦隊への艦娘の割り当ても消える)。

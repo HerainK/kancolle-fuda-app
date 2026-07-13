@@ -1,8 +1,13 @@
 import { useDroppable } from '@dnd-kit/core'
-import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
+import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 import { SortableShipCard } from './SortableShipCard'
 import { summarizeFleetComposition } from '../lib/fleetTypeSummary'
 import { FLEET_CAPACITY, FLEET_TYPE_LABELS, type Box, type ShipInstance, type ShipMasterEntry, type Tag } from '../types/models'
+
+export function boxOrderId(boxId: string): string {
+  return `box-order-${boxId}`
+}
 
 export function AssignmentBox({
   box,
@@ -23,16 +28,30 @@ export function AssignmentBox({
   onBoxClick: () => void
   onRemoveShip: (shipInstanceId: string) => void
 }) {
-  const { setNodeRef, isOver } = useDroppable({ id: box.id })
+  const { setNodeRef: setDropRef, isOver } = useDroppable({ id: box.id })
+  const {
+    attributes,
+    listeners,
+    setNodeRef: setSortableRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: boxOrderId(box.id), data: { type: 'box', boxId: box.id } })
   const masterById = new Map(shipMaster.map((m) => [m.id, m]))
   const capacity = FLEET_CAPACITY[box.fleetType]
   const isFull = box.shipInstanceIds.length >= capacity
   const composition = summarizeFleetComposition(ships, shipMaster)
 
+  function setRefs(node: HTMLDivElement | null) {
+    setDropRef(node)
+    setSortableRef(node)
+  }
+
   return (
     <div
-      ref={setNodeRef}
+      ref={setRefs}
       onClick={onBoxClick}
+      style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : undefined }}
       className={`flex flex-col gap-2 p-2 rounded-md border min-h-32 ${
         isOver
           ? 'border-gray-900 dark:border-gray-100 bg-gray-50 dark:bg-gray-800/50'
@@ -47,13 +66,25 @@ export function AssignmentBox({
           </div>
           {composition && <div className="text-gray-500">{composition}</div>}
         </div>
-        <span
-          className={`text-xs px-1.5 py-0.5 rounded ${
-            isFull ? 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-200' : 'bg-gray-100 dark:bg-gray-800'
-          }`}
-        >
-          {box.shipInstanceIds.length}/{capacity}
-        </span>
+        <div className="flex items-center gap-1 shrink-0">
+          <span
+            className={`text-xs px-1.5 py-0.5 rounded ${
+              isFull ? 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-200' : 'bg-gray-100 dark:bg-gray-800'
+            }`}
+          >
+            {box.shipInstanceIds.length}/{capacity}
+          </span>
+          <button
+            type="button"
+            {...listeners}
+            {...attributes}
+            onClick={(e) => e.stopPropagation()}
+            className="text-gray-400 dark:text-gray-500 cursor-grab touch-none select-none px-1"
+            aria-label="艦隊の並び替え"
+          >
+            ⠿
+          </button>
+        </div>
       </div>
 
       <SortableContext

@@ -1,11 +1,25 @@
-import { closestCenter, DndContext, PointerSensor, TouchSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core'
+import { closestCenter, DndContext, PointerSensor, TouchSensor, useSensor, useSensors, type CollisionDetection, type DragEndEvent } from '@dnd-kit/core'
+import { SortableContext, rectSortingStrategy } from '@dnd-kit/sortable'
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { AssignmentBox } from '../components/AssignmentBox'
+import { AssignmentBox, boxOrderId } from '../components/AssignmentBox'
 import { ShipPool } from '../components/ShipPool'
 import { useAppData } from '../state/AppDataContext'
 import { assignShipToBox, canDropShip, removeShipFromBox } from '../state/assignmentActions'
-import { reorderBoxShips } from '../state/eventActions'
+import { reorderBoxes, reorderBoxShips } from '../state/eventActions'
+
+type DragItemData = { type: 'box'; boxId: string } | { shipInstanceId: string; sourceBoxId: string | null }
+
+// 艦隊自体の並び替えと、艦隊内の艦娘の並び替え/割り当てを別々の衝突判定領域として扱う
+// (同じ画面上に「艦隊のドロップ領域」と「艦娘のドロップ領域」が入れ子で存在するため)
+const collisionDetection: CollisionDetection = (args) => {
+  const activeType = (args.active.data.current as { type?: string } | undefined)?.type
+  const filtered = args.droppableContainers.filter((c) => {
+    const type = (c.data.current as { type?: string } | undefined)?.type
+    return activeType === 'box' ? type === 'box' : type !== 'box'
+  })
+  return closestCenter({ ...args, droppableContainers: filtered })
+}
 
 export function AssignmentPage() {
   const { data, setData } = useAppData()
@@ -55,8 +69,18 @@ export function AssignmentPage() {
   function handleDragEnd(dragEvent: DragEndEvent) {
     const { active, over } = dragEvent
     if (!over) return
-    const activeData = active.data.current as { shipInstanceId: string; sourceBoxId: string | null }
-    const overData = over.data.current as { shipInstanceId: string; sourceBoxId: string | null } | undefined
+    const activeRaw = active.data.current as DragItemData | undefined
+    const overRaw = over.data.current as DragItemData | undefined
+
+    if (activeRaw && 'type' in activeRaw && activeRaw.type === 'box') {
+      if (overRaw && 'type' in overRaw && overRaw.type === 'box' && activeRaw.boxId !== overRaw.boxId) {
+        setData((prev) => reorderBoxes(prev, event.id, activeRaw.boxId, overRaw.boxId))
+      }
+      return
+    }
+
+    const activeData = activeRaw as { shipInstanceId: string; sourceBoxId: string | null }
+    const overData = overRaw as { shipInstanceId: string; sourceBoxId: string | null } | undefined
     const destId = String(over.id)
 
     if (destId === 'pool') {
@@ -89,7 +113,7 @@ export function AssignmentPage() {
   }
 
   return (
-    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+    <DndContext sensors={sensors} collisionDetection={collisionDetection} onDragEnd={handleDragEnd}>
       <div className="flex flex-col gap-3">
         <div className="flex items-center justify-between gap-2">
           <h1 className="text-xl font-bold">割り当て</h1>
@@ -123,23 +147,25 @@ export function AssignmentPage() {
               selectedShipId={selectedShipId}
               onSelectShip={selectShip}
             />
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 flex-1 w-full">
-              {event.boxes.map((box) => (
-                <AssignmentBox
-                  key={box.id}
-                  box={box}
-                  tag={event.tags.find((t) => t.id === box.tagId)}
-                  ships={box.shipInstanceIds
-                    .map((id) => data.shipInstances.find((s) => s.id === id))
-                    .filter((s): s is NonNullable<typeof s> => s !== undefined)}
-                  shipMaster={data.shipMaster}
-                  selectedShipId={selectedShipId}
-                  onSelectShip={selectShip}
-                  onBoxClick={() => handleBoxClick(box.id)}
-                  onRemoveShip={(shipId) => handleRemove(box.id, shipId)}
-                />
-              ))}
-            </div>
+            <SortableContext items={event.boxes.map((box) => boxOrderId(box.id))} strategy={rectSortingStrategy}>
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 flex-1 w-full">
+                {event.boxes.map((box) => (
+                  <AssignmentBox
+                    key={box.id}
+                    box={box}
+                    tag={event.tags.find((t) => t.id === box.tagId)}
+                    ships={box.shipInstanceIds
+                      .map((id) => data.shipInstances.find((s) => s.id === id))
+                      .filter((s): s is NonNullable<typeof s> => s !== undefined)}
+                    shipMaster={data.shipMaster}
+                    selectedShipId={selectedShipId}
+                    onSelectShip={selectShip}
+                    onBoxClick={() => handleBoxClick(box.id)}
+                    onRemoveShip={(shipId) => handleRemove(box.id, shipId)}
+                  />
+                ))}
+              </div>
+            </SortableContext>
           </div>
         )}
       </div>
