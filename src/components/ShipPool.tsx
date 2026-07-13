@@ -68,7 +68,7 @@ export function ShipPool({
   const untaggedCount = ships.filter((s) => s.currentTagId === null).length
 
   return (
-    <div className="flex flex-col gap-2 w-full md:w-64 shrink-0">
+    <div className="flex flex-col gap-2 w-full md:w-64 shrink-0 sticky top-4 self-start">
       <h2 className="text-sm font-semibold text-gray-500">
         艦娘プール (未タグ {untaggedCount} / 全{ships.length})
       </h2>
