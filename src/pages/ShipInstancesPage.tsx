@@ -40,7 +40,7 @@ export function ShipInstancesPage() {
           onClick={() => setShowCsvImport((v) => !v)}
           className="px-3 py-1.5 rounded border border-gray-300 dark:border-gray-700 text-sm"
         >
-          {showCsvImport ? '閉じる' : 'CSVインポート(Poi)'}
+          {showCsvImport ? '閉じる' : 'CSVインポート'}
         </button>
       </div>
       <p className="text-sm text-gray-500">

@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import { buildCsvImportPreview, type CsvImportPreview } from '../lib/csvImport'
+import { buildCsvImportPreview, readCsvFileAsText, type CsvImportPreview } from '../lib/csvImport'
 import { useAppData } from '../state/AppDataContext'
 import { addShipInstancesBulk } from '../state/shipInstanceActions'
 
@@ -10,14 +10,15 @@ export function CsvImportPanel({ onDone }: { onDone: () => void }) {
   const [error, setError] = useState<string | null>(null)
   const [fileName, setFileName] = useState<string | null>(null)
 
-  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+  async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     e.target.value = ''
     if (!file) return
 
-    const reader = new FileReader()
-    reader.onload = () => {
-      const result = buildCsvImportPreview(String(reader.result), data.shipMaster)
+    setFileName(file.name)
+    try {
+      const text = await readCsvFileAsText(file)
+      const result = buildCsvImportPreview(text, data.shipMaster)
       if ('error' in result) {
         setError(result.error)
         setPreview(null)
@@ -25,13 +26,10 @@ export function CsvImportPanel({ onDone }: { onDone: () => void }) {
         setError(null)
         setPreview(result)
       }
-      setFileName(file.name)
-    }
-    reader.onerror = () => {
+    } catch {
       setError('ファイルの読み込みに失敗しました。')
       setPreview(null)
     }
-    reader.readAsText(file)
   }
 
   function handleConfirm() {
@@ -43,7 +41,7 @@ export function CsvImportPanel({ onDone }: { onDone: () => void }) {
   return (
     <div className="flex flex-col gap-3 border border-gray-200 dark:border-gray-800 rounded-md p-3">
       <p className="text-xs text-gray-500">
-        艦これ専用ブラウザ「Poi」から出力した艦娘一覧CSVを読み込みます。「保有ロック」がかかっている艦娘のみを取り込み対象とします。
+        「Poi」「七四式EN」「航海日誌拡張版」いずれかから出力した艦娘一覧CSVを読み込みます(形式は自動判定されます)。「保有ロック」がかかっている艦娘のみを取り込み対象とします。
       </p>
       <div>
         <button
