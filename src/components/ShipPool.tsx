@@ -10,12 +10,14 @@ export function ShipPool({
   tagNameById,
   selectedShipId,
   onSelectShip,
+  onUnassignTag,
 }: {
   ships: ShipInstance[]
   shipMaster: ShipMasterEntry[]
   tagNameById: Map<string, string>
   selectedShipId: string | null
   onSelectShip: (id: string) => void
+  onUnassignTag: (shipInstanceId: string) => void
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: 'pool' })
   const [search, setSearch] = useState('')
@@ -121,16 +123,31 @@ export function ShipPool({
           const master = masterById.get(instance.masterId)
           if (!master) return null
           return (
-            <ShipCard
-              key={instance.id}
-              draggableId={`pool-${instance.id}`}
-              instance={instance}
-              master={master}
-              sourceBoxId={null}
-              selected={selectedShipId === instance.id}
-              onClick={() => onSelectShip(instance.id)}
-              tagName={instance.currentTagId ? tagNameById.get(instance.currentTagId) : null}
-            />
+            <div key={instance.id} className="flex items-center gap-1">
+              <div className="flex-1 min-w-0">
+                <ShipCard
+                  draggableId={`pool-${instance.id}`}
+                  instance={instance}
+                  master={master}
+                  sourceBoxId={null}
+                  selected={selectedShipId === instance.id}
+                  onClick={() => onSelectShip(instance.id)}
+                  tagName={instance.currentTagId ? tagNameById.get(instance.currentTagId) : null}
+                />
+              </div>
+              {instance.currentTagId && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onUnassignTag(instance.id)
+                  }}
+                  className="text-xs px-1.5 py-1 rounded border border-gray-300 dark:border-gray-700 shrink-0"
+                >
+                  解除
+                </button>
+              )}
+            </div>
           )
         })}
         {filtered.length === 0 && <p className="text-xs text-gray-400">該当する艦娘がいません</p>}

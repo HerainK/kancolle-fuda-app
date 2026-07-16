@@ -5,7 +5,7 @@ import { Link } from 'react-router-dom'
 import { AssignmentBox, boxOrderId } from '../components/AssignmentBox'
 import { ShipPool } from '../components/ShipPool'
 import { useAppData } from '../state/AppDataContext'
-import { assignShipToBox, canDropShip, removeShipFromBox } from '../state/assignmentActions'
+import { assignShipToBox, canDropShip, removeShipFromBox, unassignShipEverywhere } from '../state/assignmentActions'
 import { reorderBoxes, reorderBoxShips } from '../state/eventActions'
 
 type DragItemData = { type: 'box'; boxId: string } | { shipInstanceId: string; sourceBoxId: string | null }
@@ -59,6 +59,11 @@ export function AssignmentPage() {
 
   function handleRemove(boxId: string, shipInstanceId: string) {
     setData((prev) => removeShipFromBox(prev, event.id, boxId, shipInstanceId))
+  }
+
+  function handleUnassignTag(shipInstanceId: string) {
+    setData((prev) => unassignShipEverywhere(prev, shipInstanceId))
+    setSelectedShipId((prev) => (prev === shipInstanceId ? null : prev))
   }
 
   function handleBoxClick(boxId: string) {
@@ -146,6 +151,7 @@ export function AssignmentPage() {
               tagNameById={tagNameById}
               selectedShipId={selectedShipId}
               onSelectShip={selectShip}
+              onUnassignTag={handleUnassignTag}
             />
             <SortableContext items={event.boxes.map((box) => boxOrderId(box.id))} strategy={rectSortingStrategy}>
               <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 flex-1 w-full">

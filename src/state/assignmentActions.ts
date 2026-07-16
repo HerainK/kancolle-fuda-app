@@ -54,6 +54,22 @@ export function assignShipToBox(data: AppData, eventId: string, boxId: string, s
   }
 }
 
+/** 艦娘の札を外し、入っているすべての艦隊(イベント問わず)から取り除く */
+export function unassignShipEverywhere(data: AppData, shipInstanceId: string): AppData {
+  return {
+    ...data,
+    events: data.events.map((e) => ({
+      ...e,
+      boxes: e.boxes.map((b) =>
+        b.shipInstanceIds.includes(shipInstanceId)
+          ? { ...b, shipInstanceIds: b.shipInstanceIds.filter((id) => id !== shipInstanceId) }
+          : b,
+      ),
+    })),
+    shipInstances: data.shipInstances.map((s) => (s.id === shipInstanceId ? { ...s, currentTagId: null } : s)),
+  }
+}
+
 /** 艦娘を指定の艦隊から取り除く。どの艦隊にも属さなくなった場合は未タグに戻す */
 export function removeShipFromBox(
   data: AppData,
